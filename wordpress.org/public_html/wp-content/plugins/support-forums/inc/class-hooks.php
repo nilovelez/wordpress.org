@@ -387,8 +387,8 @@ class Hooks {
 		if ( ! wp_script_is( 'quicktags' ) ) {
 			return;
 		}
-		?>
-		<script type="text/javascript">
+		wp_print_inline_script_tag(
+			<<<'JS'
 			if ( 'undefined' !== typeof edButtons && 'undefined' !== QTags ) {
 				// Replace Quicktags' blockquote button.
 				edButtons[40]  = new QTags.TagButton(
@@ -405,8 +405,8 @@ class Hooks {
 					}
 				);
 			}
-		</script>
-		<?php
+			JS
+		);
 	}
 
 	/**
@@ -1137,6 +1137,20 @@ class Hooks {
 						$page_title,
 							__( 'Review', 'wporg-forums' )
 						);
+				}
+			}
+
+			if ( bbp_is_single_view() && 'reviews' === bbp_get_view_id() ) {
+				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view filter.
+				$filter = isset( $_GET['filter'] ) ? absint( $_GET['filter'] ) : 0;
+
+				if ( $filter >= 1 && $filter <= 5 ) {
+					$title['text'] = sprintf(
+						/* translators: 1: Reviews page title, like "[Gutenberg] Reviews". 2: Number of stars. */
+						_n( '%1$s (%2$d star only)', '%1$s (%2$d stars only)', $filter, 'wporg-forums' ),
+						$title['text'],
+						$filter
+					);
 				}
 			}
 		}

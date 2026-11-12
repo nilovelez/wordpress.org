@@ -110,7 +110,7 @@ npm run themes:test
 
 ### Jobs
 
-A local instance of jobs.wordpress.net with the JobsWP plugin, theme, sample job categories, and sample job posts.
+A local instance of jobs.wordpress.net with the JobsWP plugin, the block theme and its plugin, sample job categories, and sample job posts. The pages are created from `jobs/pages/`.
 
 **Start:**
 
@@ -303,7 +303,7 @@ npm run wptv:test
 
 - Download links, subtitle tracks, and the video data in JSON-LD and Open Graph tags are missing, and `/api/videos.json` lists no video files.
 - `/oembed/` and `/unisubs/` answer with an error for every video.
-- Jetpack runs in offline mode. `mocks/wptv-local.php` turns on the VideoPress and Sharing modules anyway, so the players and sharing buttons render. The Like button needs a connection, so it doesn't show, and the editor asks to connect Jetpack.
+- Jetpack runs in offline mode. `wordpress-tv/mu-plugins/wptv-local.php` turns on the VideoPress and Sharing modules anyway, so the players and sharing buttons render. The Like button needs a connection, so it doesn't show, and the editor asks to connect Jetpack.
 - Uploads from the submission form stay local instead of going to VideoPress, so every submission gets the State of the Word 2024 video.
 
 ### Photo Directory

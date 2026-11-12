@@ -32,7 +32,6 @@ class WordPressTV_Theme {
 		add_action( 'publish_post', array( $this, 'publish_post' ), 10, 1 );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post', array( $this, 'save_meta_box_fields' ), 10, 2);
-		add_action( 'wp_footer', array( $this, 'videopress_flash_params' ) );
 		add_action( 'transition_post_status', array( $this, 'transition_post_status' ), 10, 2 );
 
 		add_filter( 'pre_option_blog_upload_space', array( $this, 'blog_upload_space' ) );
@@ -451,14 +450,6 @@ class WordPressTV_Theme {
 		}
 	}
 
-
-	/**
-	 * Change VideoPress Params, runs during wp_footer
-	 */
-	function videopress_flash_params() {
-		echo '<script type="text/javascript">if(jQuery.VideoPress){jQuery.VideoPress.video.flash.params.wmode="opaque";}</script>';
-	}
-
 	/**
 	 * List Comments Callback
 	 *
@@ -566,7 +557,20 @@ class WordPressTV_Theme {
 		if ( $arrow ) {
 			?><a href="<?php the_permalink() ?>" class="showarrow arrow"><?php the_title(); ?></a><?php
 		}
-		if ( $html_code ) {
+		if ( $html_code && $ret ) {
+			// The thumbnail host resizes on request; `auto` sizes match the rendered cell where supported.
+			$srcset = [];
+			foreach ( [ 160, 320, 640 ] as $width ) {
+				$srcset[] = esc_url( add_query_arg( 'w', $width, $ret ) ) . " {$width}w";
+			}
+
+			$ret = sprintf(
+				'<img src="%1$s" srcset="%2$s" sizes="auto, (max-width: 620px) 100vw, (max-width: 939px) 340px, 220px" width="320" height="180" loading="lazy" decoding="async" alt="%3$s" />',
+				esc_url( add_query_arg( 'w', 320, $ret ) ),
+				implode( ', ', $srcset ),
+				esc_attr( $post->post_title )
+			);
+		} elseif ( $html_code ) {
 			$ret = '<img src="' . $ret . '" alt="' . esc_attr( $post->post_title ) . '" />';
 		}
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Rendered markup: core link helpers, the_content/the_title filter output, and widget before/after wrappers.

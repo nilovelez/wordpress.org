@@ -276,6 +276,21 @@ function wporg_breathe_add_site_navigation_menus( $menus ) {
 add_filter( 'wporg_block_navigation_menus', __NAMESPACE__ . '\wporg_breathe_add_site_navigation_menus' );
 
 /**
+ * Drops page-pledges.php from the page template hierarchy on sites without a team.
+ *
+ * @param array $templates Page template file names, in order of preference.
+ * @return array Page template file names.
+ */
+function remove_pledges_template_without_team( $templates ) {
+	if ( function_exists( 'WordPressdotorg\\Make\\Pledges\\get_current_team' ) && \WordPressdotorg\Make\Pledges\get_current_team() ) {
+		return $templates;
+	}
+
+	return array_values( array_diff( $templates, array( 'page-pledges.php' ) ) );
+}
+add_filter( 'page_template_hierarchy', __NAMESPACE__ . '\remove_pledges_template_without_team' );
+
+/**
  * Add postMessage support for site title and description in the customizer.
  *
  * @param WP_Customize_Manager $wp_customize The customizer object.
@@ -329,8 +344,9 @@ add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\scripts', 11 );
 
 function inline_scripts() {
 	$current_site = get_site();
-	?>
-	<script type="text/javascript">
+	wp_print_inline_script_tag(
+		sprintf(
+			<<<'JS'
 		var el = document.getElementById( 'make-welcome-toggle' );
 		if ( el ) {
 			el.addEventListener( 'click', function( e ) {
@@ -349,12 +365,27 @@ function inline_scripts() {
 				document.cookie = $content.data( 'cookie' ) + '=' +
 					( isHide ? $content.data( 'hash' ) : '' ) +
 					'; expires=Fri, 31 Dec 9999 23:59:59 GMT' +
-					'; domain=<?php echo esc_js( $current_site->domain ); ?>' +
-					'; path=<?php echo esc_js( $current_site->path ); ?>';
+					'; domain=' + %s +
+					'; path=' + %s;
 			} );
 		}
-	</script>
-	<?php
+
+		var closeButton = document.getElementById( 'secondary-close' );
+		if ( closeButton ) {
+			closeButton.addEventListener( 'click', function() {
+				document.body.classList.remove( 'responsive-show' );
+
+				var toggle = document.getElementById( 'secondary-toggle' );
+				if ( toggle ) {
+					toggle.focus();
+				}
+			} );
+		}
+		JS,
+			wp_json_encode( $current_site->domain ),
+			wp_json_encode( $current_site->path )
+		)
+	);
 }
 add_action( 'wp_footer', __NAMESPACE__ . '\inline_scripts' );
 
@@ -383,7 +414,7 @@ function welcome_box() {
 	add_filter( 'o2_post_fragment', '__return_empty_array' );
 	?>
 	<div class="make-welcome">
-		<a href="#" id="secondary-toggle" onclick="return false;"><strong><?php esc_html_e( 'Menu', 'wporg' ); ?></strong></a>
+		<button type="button" id="secondary-toggle" aria-label="<?php esc_attr_e( 'Open menu', 'wporg' ); ?>"></button>
 		<div class="entry-meta">
 			<?php edit_post_link( __( 'Edit', 'wporg' ), '', '', $welcome->ID, 'post-edit-link make-welcome-edit-post-link' ); ?>
 			<button
@@ -394,12 +425,15 @@ function welcome_box() {
 			><span><?php esc_html_e( 'Hide welcome box', 'wporg' ); ?></span></button>
 		</div>
 		<div class="entry-content clear" id="make-welcome-content" data-cookie="<?php echo esc_attr( $cookie ); ?>" data-hash="<?php echo esc_attr( $content_hash ); ?>">
-			<script type="text/javascript">
+			<?php
+			wp_print_inline_script_tag(
+				sprintf(
+					<<<'JS'
 				const elContent = document.getElementById( 'make-welcome-content' );
 
 				if ( elContent ) {
 					const hasCookieSetToHidden = -1 !== document.cookie.indexOf( elContent.dataset.cookie + '=' + elContent.dataset.hash );
-					const isHome = window.location.pathname === '<?php echo esc_js( $path ); ?>';
+					const isHome = window.location.pathname === %s;
 
 					if ( hasCookieSetToHidden || ! isHome ) {
 						const elToggle = document.getElementById( 'make-welcome-toggle' );
@@ -418,7 +452,11 @@ function welcome_box() {
 						}
 					}
 				}
-			</script>
+				JS,
+					wp_json_encode( $path )
+				)
+			);
+			?>
 			<?php the_content(); ?>
 		</div>
 	</div>
